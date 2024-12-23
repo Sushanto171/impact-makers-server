@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
 const app = express();
 
@@ -40,7 +40,9 @@ const run = async () => {
     // create db
     const dbName = client.db("ImpactMakers");
     const volunteerPostsCollection = dbName.collection("volunteerPosts");
+    const volunteerRequestCollection = dbName.collection("volunteerRequest");
 
+    //1. get all post
     app.get("/volunteers-posts", async (req, res) => {
       try {
         const { condition } = req.query;
@@ -69,6 +71,50 @@ const run = async () => {
       }
     });
 
+    // 2. get post by id
+    app.get("/volunteer-post/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await volunteerPostsCollection.findOne(query);
+        res.status(200).json({
+          success: true,
+          message: "Post fetching success",
+          data: result,
+        });
+      } catch (error) {
+        res.status(500).json({ message: "Internal sever error" });
+      }
+    });
+
+    // 3. add volunteer req data in db
+    app.post("/volunteer-request", async (req, res) => {
+      try {
+        const reqData = req.body;
+        console.log(reqData);
+        // 1. validate
+
+        // 2. add data
+        const result = await volunteerRequestCollection.insertOne(reqData);
+
+        // 3. update
+        const doc = { $inc: { volunteers_needed: -1 } };
+        const update = await volunteerPostsCollection.updateOne(
+          {
+            _id: new ObjectId(reqData.job_id),
+          },
+          doc
+        );
+        console.log(update);
+        res.status(200).json({
+          success: true,
+          message: "All post fetching success",
+          data: result,
+        });
+      } catch (error) {
+        res.status(500).json({ message: "Internal sever error" });
+      }
+    });
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     // Send a ping to confirm a successful connection
