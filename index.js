@@ -8,7 +8,11 @@ const app = express();
 // middleware
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "https://login-signup-form-auth.web.app",
+      "https://login-signup-form-auth.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
@@ -204,6 +208,40 @@ const run = async () => {
         res.status(200).json({
           success: true,
           message: "Post delete success",
+          data: result,
+        });
+      } catch (error) {
+        res.status(500).json({ message: "Internal sever error" });
+      }
+    });
+
+    // 9. get volunteer request data by user email
+    app.get("/volunteer-request/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+        const result = await volunteerRequestCollection
+          .find({ volunteer_email: email })
+          .toArray();
+        res.status(200).json({
+          success: true,
+          message: "All post fetching success",
+          data: result,
+        });
+      } catch (error) {
+        res.status(500).json({ message: "Internal sever error" });
+      }
+    });
+
+    // 10. volunteer req. cancel
+    app.delete("/volunteer-req-cancel/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const result = await volunteerRequestCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+        res.status(200).json({
+          success: true,
+          message: "Successfully requested cancel",
           data: result,
         });
       } catch (error) {
