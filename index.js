@@ -2,6 +2,8 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const port = process.env.PORT || 5000;
 const app = express();
 
@@ -16,6 +18,7 @@ app.use(
     credentials: true,
   })
 );
+app.use(cookieParser());
 app.use(express.json());
 
 const uri = process.env.DB_URL;
@@ -46,6 +49,50 @@ const run = async () => {
     const volunteerPostsCollection = dbName.collection("volunteerPosts");
     const volunteerRequestCollection = dbName.collection("volunteerRequest");
 
+    // =========================JWT===================================
+    // 1.generate token
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.JWT_SECRET, {
+        expiresIn: "20min",
+      });
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+          secure: process.env.NODE_ENV === "production",
+        })
+        .json({
+          message: "token generate success",
+        });
+    });
+
+    //2. verify token
+    const verifyToken = async (req, res, next) => {
+      try {
+        const token = req.cookies?.token;
+
+        if (!token) {
+          res.status(401).send("unAuthorized: no token provided");
+          return;
+        }
+        jwt.verify(token, process.env.JWT_SECRET, (error, decoded) => {
+          if (error) {
+            res
+              .status(403)
+              .send({ message: "Forbidden: Invalid or expired token" });
+            return;
+          }
+          req.user = decoded.email;
+
+          next();
+        });
+      } catch (error) {
+        req.status(500).send({ message: "internal server error" });
+      }
+    };
+
+    // ______________________________________________________________________________________________________\\
     //1. get all post
     app.get("/volunteers-posts", async (req, res) => {
       try {
@@ -163,9 +210,16 @@ const run = async () => {
     });
 
     // 6. get post by user email
-    app.get("/volunteers-posts/:email", async (req, res) => {
+    app.get("/volunteers-posts/:email", verifyToken, async (req, res) => {
       try {
+        // 1. verify user by
+        const user = req.user;
         const email = req.params.email;
+        if (user !== email) {
+          res.status(403).send({ message: "Forbidden: unAuthorized user!" });
+          return;
+        }
+
         const query = { organizer_email: email };
         const result = await volunteerPostsCollection.find(query).toArray();
         res.status(200).json({
