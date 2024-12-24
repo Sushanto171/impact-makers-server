@@ -153,7 +153,59 @@ const run = async () => {
           message: "All post fetching success",
           data: result,
         });
-        console.log(result);
+      } catch (error) {
+        res.status(500).json({ message: "Internal sever error" });
+      }
+    });
+
+    // 6. get post by user email
+    app.get("/volunteers-posts/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+        const query = { organizer_email: email };
+        const result = await volunteerPostsCollection.find(query).toArray();
+        res.status(200).json({
+          success: true,
+          message: "All post fetching success",
+          data: result,
+        });
+      } catch (error) {
+        res.status(500).json({ message: "Internal sever error" });
+      }
+    });
+
+    // 7. Update post
+    app.patch("/update-post/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const data = req.body;
+        const update = { $set: data };
+        const result = await volunteerPostsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          update
+        );
+        res.status(200).json({
+          success: true,
+          message: "Post updated success",
+          data: result,
+        });
+      } catch (error) {
+        res.status(500).json({ message: "Internal sever error" });
+      }
+    });
+
+    // 8. delete post
+    app.delete("/delete-post/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const result = await volunteerPostsCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+        res.status(200).json({
+          success: true,
+          message: "Post delete success",
+          data: result,
+        });
       } catch (error) {
         res.status(500).json({ message: "Internal sever error" });
       }
