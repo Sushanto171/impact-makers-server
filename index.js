@@ -8,7 +8,7 @@ const app = express();
 // middleware
 app.use(
   cors({
-    origin: "http://localhost:5174",
+    origin: "http://localhost:5173",
     credentials: true,
   })
 );
@@ -45,8 +45,21 @@ const run = async () => {
     //1. get all post
     app.get("/volunteers-posts", async (req, res) => {
       try {
-        const { condition } = req.query;
-        let query;
+        const { condition, query, currentPage, size } = req.query;
+        // 1. query
+        let options = {};
+        if (query) {
+          options = { post_title: { $regex: query, $options: "i" } };
+          const result = await volunteerPostsCollection.find(options).toArray();
+          res.status(200).json({
+            success: true,
+            message: "Search on title success",
+            data: result,
+          });
+
+          return;
+        }
+        // 2. home route
         if (condition === "home") {
           const result = await volunteerPostsCollection
             .find({})
@@ -60,7 +73,14 @@ const run = async () => {
           });
           return;
         }
-        const result = await volunteerPostsCollection.find().toArray();
+        // 3.pagination
+        const page = parseInt(currentPage) - 1;
+
+        const result = await volunteerPostsCollection
+          .find(options)
+          .skip(page * parseInt(size))
+          .limit(parseInt(size))
+          .toArray();
         res.status(200).json({
           success: true,
           message: "All post fetching success",
@@ -68,6 +88,7 @@ const run = async () => {
         });
       } catch (error) {
         res.status(500).json({ message: "Internal sever error" });
+        console.log(error);
       }
     });
 
@@ -91,7 +112,7 @@ const run = async () => {
     app.post("/volunteer-request", async (req, res) => {
       try {
         const reqData = req.body;
-        console.log(reqData);
+
         // 1. validate
 
         // 2. add data
@@ -105,12 +126,34 @@ const run = async () => {
           },
           doc
         );
-        console.log(update);
+
         res.status(200).json({
           success: true,
           message: "All post fetching success",
           data: result,
         });
+      } catch (error) {
+        res.status(500).json({ message: "Internal sever error" });
+      }
+    });
+
+    // 4. count data on the database
+    app.get("/count", async (req, res) => {
+      const result = await volunteerPostsCollection.estimatedDocumentCount();
+      res.send({ count: result });
+    });
+
+    // 5.  Add post on the volunteersPostsCollection
+    app.post("/volunteers-posts", async (req, res) => {
+      try {
+        const data = req.body;
+        const result = await volunteerPostsCollection.insertOne(data);
+        res.status(200).json({
+          success: true,
+          message: "All post fetching success",
+          data: result,
+        });
+        console.log(result);
       } catch (error) {
         res.status(500).json({ message: "Internal sever error" });
       }
