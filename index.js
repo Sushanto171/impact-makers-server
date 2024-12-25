@@ -92,6 +92,18 @@ const run = async () => {
       }
     };
 
+    // 3. token clear
+    app.post("/log-out", (req, res) => {
+      res
+        .clearCookie("token", {
+          httpOnly: true,
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+          secure: process.env.NODE_ENV === "production",
+        })
+        .status(200)
+        .send({ message: "Successfully logged out" });
+    });
+
     // ______________________________________________________________________________________________________\\
     //1. get all post
     app.get("/volunteers-posts", async (req, res) => {
