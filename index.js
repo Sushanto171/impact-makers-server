@@ -33,16 +33,6 @@ const client = new MongoClient(uri, {
 });
 
 const run = async () => {
-  // try {
-  //   const result = await volunteerPostsCollection.find().toArray();
-  //   res.status(200).json({
-  //     success: true,
-  //     message: "All post fetching success",
-  //     data: result,
-  //   });
-  // } catch (error) {
-  //   res.status(500).json({ message: "Internal sever error" });
-  // }
   try {
     // create db
     const dbName = client.db("ImpactMakers");
@@ -156,7 +146,7 @@ const run = async () => {
     });
 
     // 2. get post by id
-    app.get("/volunteer-post/:id", async (req, res) => {
+    app.get("/volunteer-post/:id", verifyToken, async (req, res) => {
       try {
         const id = req.params.id;
         const query = { _id: new ObjectId(id) };
@@ -245,7 +235,7 @@ const run = async () => {
     });
 
     // 7. Update post
-    app.patch("/update-post/:id", async (req, res) => {
+    app.patch("/update-post/:id", verifyToken, async (req, res) => {
       try {
         const id = req.params.id;
         const data = req.body;
@@ -265,7 +255,7 @@ const run = async () => {
     });
 
     // 8. delete post
-    app.delete("/delete-post/:id", async (req, res) => {
+    app.delete("/delete-post/:id", verifyToken, async (req, res) => {
       try {
         const id = req.params.id;
         const result = await volunteerPostsCollection.deleteOne({
@@ -282,7 +272,7 @@ const run = async () => {
     });
 
     // 9. get volunteer request data by user email
-    app.get("/volunteer-request/:email", async (req, res) => {
+    app.get("/volunteer-request/:email", verifyToken, async (req, res) => {
       try {
         const email = req.params.email;
         const result = await volunteerRequestCollection
@@ -299,7 +289,7 @@ const run = async () => {
     });
 
     // 10. volunteer req. cancel
-    app.delete("/volunteer-req-cancel/:id", async (req, res) => {
+    app.delete("/volunteer-req-cancel/:id", verifyToken, async (req, res) => {
       try {
         const id = req.params.id;
         const result = await volunteerRequestCollection.deleteOne({
@@ -315,9 +305,9 @@ const run = async () => {
       }
     });
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
