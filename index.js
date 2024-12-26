@@ -38,6 +38,8 @@ const run = async () => {
     const dbName = client.db("ImpactMakers");
     const volunteerPostsCollection = dbName.collection("volunteerPosts");
     const volunteerRequestCollection = dbName.collection("volunteerRequest");
+    const eventsCollection = dbName.collection("events");
+    const blogsCollection = dbName.collection("blogs");
 
     // =========================JWT===================================
     // 1.generate token
@@ -304,6 +306,48 @@ const run = async () => {
         res.status(500).json({ message: "Internal sever error" });
       }
     });
+
+    // events related apis
+
+    // 1.get events data
+    app.get("/events", async (req, res) => {
+      try {
+        const result = await eventsCollection.find({}).toArray();
+        res.status(200).json({
+          success: true,
+          message: "Successfully requested cancel",
+          data: result,
+        });
+      } catch (error) {
+        res.status(500).json({ message: "Internal sever error" });
+      }
+    });
+
+    // 1.get blogs data
+    app.get("/blogs", async (req, res) => {
+      try {
+        const { condition } = req.query;
+
+        if (condition) {
+          const result = await blogsCollection.find({}).limit(3).toArray();
+          res.status(200).json({
+            success: true,
+            message: "Successfully requested cancel",
+            data: result,
+          });
+          return;
+        }
+        const result = await blogsCollection.find({}).toArray();
+        res.status(200).json({
+          success: true,
+          message: "Successfully requested cancel",
+          data: result,
+        });
+      } catch (error) {
+        res.status(500).json({ message: "Internal sever error" });
+      }
+    });
+
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
     // Send a ping to confirm a successful connection
