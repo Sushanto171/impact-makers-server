@@ -100,7 +100,7 @@ const run = async () => {
     //1. get all post
     app.get("/volunteers-posts", async (req, res) => {
       try {
-        const { condition, query, currentPage, size } = req.query;
+        const { condition, query, currentPage, size, sort } = req.query;
         // 1. query
         let options = {};
         if (query) {
@@ -119,7 +119,7 @@ const run = async () => {
           const result = await volunteerPostsCollection
             .find({})
             .sort({ deadline: 1 })
-            .limit(6)
+            .limit(8)
             .toArray();
           res.status(200).json({
             success: true,
@@ -135,6 +135,7 @@ const run = async () => {
           .find(options)
           .skip(page * parseInt(size))
           .limit(parseInt(size))
+          .sort({ category: sort && (sort === "asd" ? 1 : -1) })
           .toArray();
         res.status(200).json({
           success: true,
@@ -348,6 +349,20 @@ const run = async () => {
       }
     });
 
+    // get blog by id
+    app.get("/blog/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const result = await blogsCollection.findOne({ _id: new ObjectId(id) });
+        res.status(200).json({
+          success: true,
+          message: "Successfully fetch blog data",
+          data: result,
+        });
+      } catch (error) {
+        res.status(500).json({ message: "Internal sever error" });
+      }
+    });
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
     // Send a ping to confirm a successful connection
