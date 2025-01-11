@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
 const cookieParser = require("cookie-parser");
 const port = process.env.PORT || 5000;
 const app = express();
@@ -31,7 +32,46 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+// send email using nodemailer
 
+const sendEmail = (emailAddress) => {
+  return new Promise((resolve, reject) => {
+    // create nodemailer transporter
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.NODEMAILER_EMAIL,
+        pass: process.env.NODEMAILER_PASS,
+      },
+    });
+    // verify connection
+    // transporter.verify((error, success) => {
+    //   if (error) {
+    //     console.log("ERRRRRRRRRRRROR,", error);
+    //   } else console.log(success);
+    // });
+    // email body
+    const emailBody = {
+      form: process.env.NODEMAILER_EMAIL,
+      to: emailAddress,
+      subject: "New Subscriber email",
+      text: `New Email: ${emailAddress}`,
+      html: `<p>New email: ${emailAddress}</p>`,
+    };
+
+    // send email
+    transporter.sendMail(emailBody, (error, info) => {
+      if (error) {
+        // console.log(error);
+        reject(error);
+      } else {
+        resolve(info.response);
+      }
+    });
+  });
+};
 const run = async () => {
   try {
     // create db
@@ -361,6 +401,18 @@ const run = async () => {
         });
       } catch (error) {
         res.status(500).json({ message: "Internal sever error" });
+      }
+    });
+
+    // send mail
+    app.post("/send-email", async (req, res) => {
+      try {
+        const emailData = req.body;
+        const result = await sendEmail(emailData.email);
+        res.send({ result });
+      } catch (error) {
+        console.log(error);
+        res.status(500).send({ message: "internal server error" });
       }
     });
     // Connect the client to the server	(optional starting in v4.7)
